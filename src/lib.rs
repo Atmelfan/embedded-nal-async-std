@@ -1,12 +1,22 @@
 #![feature(generic_associated_types)]
 #![feature(type_alias_impl_trait)]
+//! This crate implements [embedded-nal-async](https://crates.io/crates/embedded-nal-async) for platforms supported by async-std.
+//! It is basically the async version of [std-embedded-nal](https://crates.io/crates/std-embedded-nal) which implements [embedded-nal](https://crates.io/crates/embedded-nal) traits for std platforms.
+//!
+//! **Note:** This crate is just as experimental as [embedded-nal-async](https://crates.io/crates/embedded-nal-async) is. Breaking changes are expected.
+//!
 
-pub mod dns;
-pub mod tcp;
-pub mod udp;
+pub(crate) mod conversions;
+pub(crate) mod dns;
+pub(crate) mod tcp;
+pub(crate) mod udp;
 
+/// Async-std stack for embedded-nal
+/// Doesn't actually do or contain anything
+#[derive(Clone, Default)]
 pub struct Stack;
 
+/// State of a TCP/UDP socket
 pub(crate) enum SocketState<C, B> {
     Closed,
     Connected(C),

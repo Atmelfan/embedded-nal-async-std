@@ -1,26 +1,42 @@
+//#![cfg_attr(not(feature = "async-std"), no_std)]
+
 use embedded_nal_async::TcpClientStack;
+
+//#[cfg(feature = "async-std")]
 use embedded_nal_async_std::Stack;
+//#[cfg(not(feature = "async-std"))]
+//use embedded_nal_async_something::Stack;
 
-async fn do_something<STACK, SOCKET, ERR>(mut stack: STACK, mut socket: SOCKET) -> Result<(), ERR>
+async fn send_hello_world<STACK>(
+    stack: &mut STACK,
+    socket: &mut STACK::TcpSocket,
+) -> Result<(), STACK::Error>
 where
-    STACK: TcpClientStack<TcpSocket = SOCKET, Error = ERR>,
+    STACK: TcpClientStack,
 {
-    stack
-        .connect(&mut socket, ([127, 0, 0, 1], 8080).into())
-        .await?;
+    stack.connect(socket, ([127, 0, 0, 1], 5223).into()).await?;
 
-    stack.send(&mut socket, b"HELLO WORLD").await?;
+    stack.send(socket, b"HELLO WORLD").await?;
+
+    let mut buffer = [0; 256];
+
+    let n = stack.receive(socket, &mut buffer).await?;
+
+    println!("<< {:?}", &buffer[..n]);
 
     Ok(())
 }
 
 #[async_std::main]
 async fn main() -> Result<(), async_std::io::Error> {
-    let mut stack = Stack;
+    //#[cfg(feature = "async-std")]
+    let mut stack = Stack::default();
+    //#[cfg(not(feature = "async-std"))]
+    //let mut stack = Stack::some_platform_dependan_init();
 
-    let socket = stack.socket().await?;
+    let mut socket = stack.socket().await?;
 
-    do_something(&mut stack, socket).await?;
+    send_hello_world(&mut stack, &mut socket).await?;
 
     Ok(())
 }

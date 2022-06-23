@@ -2,16 +2,34 @@ use async_std::{io, net};
 
 use futures::{future, Future};
 
-use crate::SocketState;
+use crate::{conversions::SocketAddr, SocketState};
 
+/// A UDP socket
 pub struct UdpSocket {
     state: SocketState<net::UdpSocket, net::UdpSocket>,
 }
 
 impl UdpSocket {
-    pub fn new() -> Self {
+    /// New unconnected socket
+    pub(crate) fn new() -> Self {
         Self {
             state: SocketState::Closed,
+        }
+    }
+
+    /// Create a new already connected socket
+    /// Useful for socket features not exposed by embedded-nal
+    pub fn connected(socket: net::UdpSocket) -> Self {
+        Self {
+            state: SocketState::Connected(socket),
+        }
+    }
+
+    /// Create an already bounded socket
+    /// Useful for socket features not exposed by embedded-nal
+    pub fn bound(socket: net::UdpSocket) -> Self {
+        Self {
+            state: SocketState::Bound(socket),
         }
     }
 }
@@ -47,23 +65,9 @@ impl embedded_nal_async::UdpClientStack for crate::Stack {
                     net::SocketAddr::new(net::IpAddr::V6(net::Ipv6Addr::UNSPECIFIED), 0)
                 }
             };
-            let addrs = match remote {
-                embedded_nal_async::SocketAddr::V4(v4) => {
-                    let ip = net::Ipv4Addr::from(v4.ip().octets());
-                    net::SocketAddr::V4(net::SocketAddrV4::new(ip, v4.port()))
-                }
-                embedded_nal_async::SocketAddr::V6(v6) => {
-                    let ip = net::Ipv6Addr::from(v6.ip().octets());
-                    net::SocketAddr::V6(net::SocketAddrV6::new(
-                        ip,
-                        v6.port(),
-                        v6.flowinfo(),
-                        v6.scope_id(),
-                    ))
-                }
-            };
+            let addrs: SocketAddr = remote.into();
             let s = net::UdpSocket::bind(unspecified).await?;
-            s.connect(addrs).await?;
+            s.connect(addrs.0).await?;
             socket.state = SocketState::Connected(s);
             Ok(())
         }
@@ -95,23 +99,8 @@ impl embedded_nal_async::UdpClientStack for crate::Stack {
     ) -> Self::ReceiveFuture<'m> {
         async move {
             let (len, addr) = socket.state.get_connected()?.recv_from(buffer).await?;
-            let addr = match addr {
-                net::SocketAddr::V4(v4) => {
-                    let ip = embedded_nal_async::Ipv4Addr::from(v4.ip().octets());
-                    embedded_nal_async::SocketAddrV4::new(ip, v4.port()).into()
-                }
-                net::SocketAddr::V6(v6) => {
-                    let ip = embedded_nal_async::Ipv6Addr::from(v6.ip().octets());
-                    embedded_nal_async::SocketAddrV6::new(
-                        ip,
-                        v6.port(),
-                        v6.flowinfo(),
-                        v6.scope_id(),
-                    )
-                    .into()
-                }
-            };
-            Ok((len, addr))
+            let addr = SocketAddr(addr);
+            Ok((len, addr.into()))
         }
     }
 
@@ -154,22 +143,8 @@ impl embedded_nal_async::UdpFullStack for crate::Stack {
         buffer: &'m [u8],
     ) -> Self::SendToFuture<'m> {
         async move {
-            let addrs = match remote {
-                embedded_nal_async::SocketAddr::V4(v4) => {
-                    let ip = net::Ipv4Addr::from(v4.ip().octets());
-                    net::SocketAddr::V4(net::SocketAddrV4::new(ip, v4.port()))
-                }
-                embedded_nal_async::SocketAddr::V6(v6) => {
-                    let ip = net::Ipv6Addr::from(v6.ip().octets());
-                    net::SocketAddr::V6(net::SocketAddrV6::new(
-                        ip,
-                        v6.port(),
-                        v6.flowinfo(),
-                        v6.scope_id(),
-                    ))
-                }
-            };
-            socket.state.get_bound()?.send_to(buffer, addrs).await?;
+            let addrs: SocketAddr = remote.into();
+            socket.state.get_bound()?.send_to(buffer, addrs.0).await?;
             Ok(())
         }
     }

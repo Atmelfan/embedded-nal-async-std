@@ -1,12 +1,19 @@
 [package]
 name = "embedded-nal-async-std"
+authors = ["Gustav Palmqvist <gustavp@gpa-robotics.com>"]
 version = "0.1.0"
 edition = "2021"
+
+description = "Implementation of the `embedded-nal-async` traits for async-std ()"
+categories = ["embedded", "hardware-support", "async"]
+keywords = ["network"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/Atmelfan/embedded-nal-async-std"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-async-std = {version = "1.12", default-features = false}
+async-std = "1.12"
 futures = "0.3"
 embedded-nal-async = "0.1.0"
 

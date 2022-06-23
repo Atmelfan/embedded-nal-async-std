@@ -1,25 +1,31 @@
-use async_std::net;
+use async_std::{io::ErrorKind, net};
 use futures::{future, AsyncReadExt, AsyncWriteExt, Future};
 
-use crate::SocketState;
+use crate::{conversions::SocketAddr, SocketState};
 
+/// A TCP socket
 pub struct TcpSocket {
     state: SocketState<net::TcpStream, net::TcpListener>,
 }
 
 impl TcpSocket {
-    pub fn new() -> Self {
+    /// Create a new closed socket
+    pub(crate) fn new() -> Self {
         Self {
             state: SocketState::Closed,
         }
     }
 
+    /// Create a new already connected socket
+    /// Useful for socket features not exposed by embedded-nal
     pub fn connected(stream: net::TcpStream) -> Self {
         Self {
             state: SocketState::Connected(stream),
         }
     }
 
+    /// Create a new already connected socket
+    /// Useful for socket features not exposed by embedded-nal
     pub fn bound(listener: net::TcpListener) -> Self {
         Self {
             state: SocketState::Bound(listener),
@@ -62,22 +68,8 @@ impl embedded_nal_async::TcpClientStack for crate::Stack {
         remote: embedded_nal_async::SocketAddr,
     ) -> Self::ConnectFuture<'m> {
         async move {
-            let addrs = match remote {
-                embedded_nal_async::SocketAddr::V4(v4) => {
-                    let ip = net::Ipv4Addr::from(v4.ip().octets());
-                    net::SocketAddr::V4(net::SocketAddrV4::new(ip, v4.port()))
-                }
-                embedded_nal_async::SocketAddr::V6(v6) => {
-                    let ip = net::Ipv6Addr::from(v6.ip().octets());
-                    net::SocketAddr::V6(net::SocketAddrV6::new(
-                        ip,
-                        v6.port(),
-                        v6.flowinfo(),
-                        v6.scope_id(),
-                    ))
-                }
-            };
-            let s = net::TcpStream::connect(addrs).await?;
+            let addrs: SocketAddr = remote.into();
+            let s = net::TcpStream::connect(addrs.0).await?;
             socket.state = SocketState::Connected(s);
             Ok(())
         }
@@ -100,7 +92,10 @@ impl embedded_nal_async::TcpClientStack for crate::Stack {
         socket: &'m mut Self::TcpSocket,
         buffer: &'m [u8],
     ) -> Self::SendFuture<'m> {
-        async move { socket.state.get_connected()?.write(buffer).await }
+        async move {
+            let n = socket.state.get_connected()?.write(buffer).await?;
+            Ok(n)
+        }
     }
 
     type ReceiveFuture<'m> = impl Future<Output = Result<usize, Self::Error>>
@@ -157,22 +152,7 @@ impl embedded_nal_async::TcpFullStack for crate::Stack {
         async move {
             let (stream, addr) = socket.state.get_bound()?.accept().await?;
             let socket = TcpSocket::connected(stream);
-            let peer: embedded_nal_async::SocketAddr = match addr {
-                net::SocketAddr::V4(v4) => {
-                    let ip = embedded_nal_async::Ipv4Addr::from(v4.ip().octets());
-                    embedded_nal_async::SocketAddrV4::new(ip, v4.port()).into()
-                }
-                net::SocketAddr::V6(v6) => {
-                    let ip = embedded_nal_async::Ipv6Addr::from(v6.ip().octets());
-                    embedded_nal_async::SocketAddrV6::new(
-                        ip,
-                        v6.port(),
-                        v6.flowinfo(),
-                        v6.scope_id(),
-                    )
-                    .into()
-                }
-            };
+            let peer: embedded_nal_async::SocketAddr = SocketAddr(addr).into();
             Ok((socket, peer))
         }
     }
