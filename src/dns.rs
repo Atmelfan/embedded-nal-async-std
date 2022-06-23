@@ -46,10 +46,10 @@ impl embedded_nal_async::Dns for crate::Stack {
 	where
 		Self: 'm;
 
-    fn get_host_by_address<'m>(
-        &'m self,
+    fn get_host_by_address(
+        &self,
         _addr: embedded_nal_async::IpAddr,
-    ) -> Self::GetHostByAddressFuture<'m> {
+    ) -> Self::GetHostByAddressFuture<'_> {
         future::ready(Err(io::ErrorKind::NotFound.into()))
     }
 }

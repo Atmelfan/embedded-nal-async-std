@@ -1,4 +1,6 @@
-use async_std::net;
+#![allow(clippy::needless_lifetimes)]
+
+use async_std::{io, net};
 use futures::{future, AsyncReadExt, AsyncWriteExt, Future};
 
 use crate::{conversions::SocketAddr, SocketState};
@@ -48,7 +50,7 @@ impl From<net::TcpListener> for TcpSocket {
 impl embedded_nal_async::TcpClientStack for crate::Stack {
     type TcpSocket = TcpSocket;
 
-    type Error = async_std::io::Error;
+    type Error = io::Error;
 
     type SocketFuture<'m> = future::Ready<Result<TcpSocket, Self::Error>>
     where

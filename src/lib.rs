@@ -38,3 +38,13 @@ impl<C, B> SocketState<C, B> {
         }
     }
 }
+
+impl<T> SocketState<T, T> {
+    pub(crate) fn get_either(&mut self) -> async_std::io::Result<&mut T> {
+        match self {
+            SocketState::Connected(t) => Ok(t),
+            SocketState::Bound(t) => Ok(t),
+            _ => Err(async_std::io::ErrorKind::NotConnected.into()),
+        }
+    }
+}

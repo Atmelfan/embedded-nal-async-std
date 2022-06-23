@@ -1,5 +1,6 @@
-use async_std::{io, net};
+#![allow(clippy::needless_lifetimes)]
 
+use async_std::{io, net};
 use futures::{future, Future};
 
 use crate::{conversions::SocketAddr, SocketState};
@@ -83,7 +84,7 @@ impl embedded_nal_async::UdpClientStack for crate::Stack {
         buffer: &'m [u8],
     ) -> Self::SendFuture<'m> {
         async move {
-            socket.state.get_connected()?.send(buffer).await?;
+            socket.state.get_either()?.send(buffer).await?;
             Ok(())
         }
     }
@@ -98,7 +99,7 @@ impl embedded_nal_async::UdpClientStack for crate::Stack {
         buffer: &'m mut [u8],
     ) -> Self::ReceiveFuture<'m> {
         async move {
-            let (len, addr) = socket.state.get_connected()?.recv_from(buffer).await?;
+            let (len, addr) = socket.state.get_either()?.recv_from(buffer).await?;
             let addr = SocketAddr(addr);
             Ok((len, addr.into()))
         }
