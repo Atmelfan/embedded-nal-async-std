@@ -3,10 +3,9 @@ name = "embedded-nal-async-std"
 authors = ["Gustav Palmqvist <gustavp@gpa-robotics.com>"]
 version = "0.1.0"
 edition = "2021"
-
 description = "Implementation of the `embedded-nal-async` traits for async-std ()"
 categories = ["embedded", "hardware-support", "async"]
-keywords = ["network"]
+keywords = ["network", "no-std"]
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/Atmelfan/embedded-nal-async-std"
 
