@@ -1,4 +1,4 @@
-use async_std::{io::ErrorKind, net};
+use async_std::net;
 use futures::{future, AsyncReadExt, AsyncWriteExt, Future};
 
 use crate::{conversions::SocketAddr, SocketState};
