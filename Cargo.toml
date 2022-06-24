@@ -1,7 +1,7 @@
 [package]
 name = "embedded-nal-async-std"
 authors = ["Gustav Palmqvist <gustavp@gpa-robotics.com>"]
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "Implementation of the `embedded-nal-async` traits for async-std ()"
 categories = ["embedded", "hardware-support", "async"]

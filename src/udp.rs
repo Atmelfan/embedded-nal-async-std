@@ -125,8 +125,7 @@ impl embedded_nal_async::UdpFullStack for crate::Stack {
         local_port: u16,
     ) -> Self::BindFuture<'m> {
         async move {
-            let unspecified =
-                net::SocketAddr::new(net::IpAddr::V6(net::Ipv6Addr::UNSPECIFIED), local_port);
+            let unspecified = net::SocketAddr::new(self.ip, local_port);
             let s = net::UdpSocket::bind(unspecified).await?;
             socket.state = SocketState::Bound(s);
             Ok(())

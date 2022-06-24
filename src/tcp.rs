@@ -132,7 +132,7 @@ impl embedded_nal_async::TcpFullStack for crate::Stack {
         local_port: u16,
     ) -> Self::BindFuture<'m> {
         async move {
-            let b = net::TcpListener::bind((net::Ipv4Addr::UNSPECIFIED, local_port)).await?;
+            let b = net::TcpListener::bind((self.ip, local_port)).await?;
             socket.state = SocketState::Bound(b);
             Ok(())
         }

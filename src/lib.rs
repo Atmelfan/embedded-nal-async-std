@@ -11,10 +11,28 @@ pub(crate) mod dns;
 pub(crate) mod tcp;
 pub(crate) mod udp;
 
+use async_std::net;
+
 /// Async-std stack for embedded-nal
 /// Doesn't actually do or contain anything
-#[derive(Clone, Default)]
-pub struct Stack;
+#[derive(Clone)]
+pub struct Stack {
+    ip: net::IpAddr,
+}
+
+impl Stack {
+    pub fn new(ip: net::IpAddr) -> Self {
+        Self { ip }
+    }
+}
+
+impl Default for Stack {
+    fn default() -> Self {
+        Self {
+            ip: net::Ipv4Addr::UNSPECIFIED.into(),
+        }
+    }
+}
 
 /// State of a TCP/UDP socket
 pub(crate) enum SocketState<C, B> {
